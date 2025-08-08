@@ -3,22 +3,25 @@ using UnityEngine.AI;
 using System.Collections;
 
 /// <summary>
-/// Controls the policeman NPC using NavMesh, raycasting, and FSM logic to detect and arrest the player.
+/// Controls the policeman NPC using NavMesh, raycasting, FSM logic, and UI-based arrest sequence.
 /// </summary>
 public class PolicemanBehaviour : MonoBehaviour
 {
     private enum PoliceState { Patrol, Chase }
 
     [Header("References")]
-    [SerializeField] private GameObject gameOverScreen;
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private Transform player;
+
+    [Header("UI Elements")]
+    [SerializeField] private GameObject dialoguePanel;    // Step 1: Confrontation UI
+    [SerializeField] private GameObject gameOverScreen;   // Step 2: Game Over UI
 
     [Header("Settings")]
     [SerializeField] private float visionRange = 10f;
     [SerializeField] private float chaseSpeed = 5f;
     [SerializeField] private float patrolSpeed = 2f;
-    [SerializeField] private LayerMask visionMask = ~0; // TEMP: Raycast hits all layers
+    [SerializeField] private LayerMask visionMask = ~0; // Raycast hits all layers
 
     private NavMeshAgent agent;
     private int currentPatrolIndex = 0;
@@ -80,11 +83,9 @@ public class PolicemanBehaviour : MonoBehaviour
     {
         if (!isPlayerStolen) return;
 
-        Debug.Log("Checking for player... stolen = " + isPlayerStolen);
-
         Vector3 direction = (player.position - transform.position).normalized;
         float distance = Vector3.Distance(transform.position, player.position);
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f; // Adjust height
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
 
         if (distance <= visionRange)
         {
@@ -108,7 +109,6 @@ public class PolicemanBehaviour : MonoBehaviour
     {
         Debug.Log("Something touched the policeman: " + other.name);
 
-        // TEMP: Remove state check to confirm working trigger
         if (other.CompareTag("Player") && !hasArrested)
         {
             hasArrested = true;
@@ -122,16 +122,25 @@ public class PolicemanBehaviour : MonoBehaviour
                 playerScript.enabled = false;
             }
 
-            StartCoroutine(ShowArrestDialogue());
+            StartCoroutine(ShowArrestSequence());
         }
     }
 
-    private IEnumerator ShowArrestDialogue()
+    private IEnumerator ShowArrestSequence()
     {
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(true); // Show confrontation UI
+
         Debug.Log("Dialogue: 'We've received a report. Show me your bag.'");
+
         yield return new WaitForSeconds(2f);
 
-        gameOverScreen.SetActive(true);
-        Time.timeScale = 0f;
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
+        if (gameOverScreen != null)
+            gameOverScreen.SetActive(true);
+
+        Time.timeScale = 0f; // Pause the game
     }
 }
