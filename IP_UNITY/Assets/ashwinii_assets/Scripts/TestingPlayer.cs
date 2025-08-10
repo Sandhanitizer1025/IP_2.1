@@ -4,7 +4,7 @@ using UnityEngine;
 /// Player script for movement and stealing.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
-public class PlayerBehaviour : MonoBehaviour
+public class PlayerBehaviourAsh : MonoBehaviour
 {
     private bool canSteal = false;
     private StealableItemBehaviour currentItem = null;
