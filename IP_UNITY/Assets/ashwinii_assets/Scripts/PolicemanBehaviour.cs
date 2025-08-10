@@ -116,7 +116,7 @@ public class PolicemanBehaviour : MonoBehaviour
 
             agent.isStopped = true;
 
-            PlayerBehaviour playerScript = other.GetComponent<PlayerBehaviour>();
+            PlayerBehaviourAsh playerScript = other.GetComponent<PlayerBehaviourAsh>();
             if (playerScript != null)
             {
                 playerScript.enabled = false;
