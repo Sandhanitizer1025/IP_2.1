@@ -9,8 +9,6 @@ public class ItemBehaviour : MonoBehaviour, IInteractable
     int itemValue = 1;
 
 
-
-
     public void Interact()
     {
         Collect();
@@ -18,7 +16,7 @@ public class ItemBehaviour : MonoBehaviour, IInteractable
 
     public string GetDescription()
     {
-        return "Hold E to steal";
+        return "Hold to steal";
     }
 
     /// <summary>
@@ -27,6 +25,9 @@ public class ItemBehaviour : MonoBehaviour, IInteractable
     /// </summary>
     public void Collect()
     {
+        // Add to the player's score
+        GameManager.instance.ModifyScore(itemValue);
+
         // Destroy the item object
         Destroy(gameObject);
     }

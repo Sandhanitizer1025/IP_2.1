@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -25,6 +26,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     [SerializeField]
     TextMeshProUGUI scoreText;
+
+    [SerializeField]
+    Slider stealProgressSlider;
 
     /// <summary>
     /// Unity Awake method. Handles singleton pattern and ensures only one instance exists.
@@ -53,7 +57,8 @@ public class GameManager : MonoBehaviour
     public void ModifyScore(int amount)
     {
         currentScore += amount;
-        scoreText.text = "SCORE:  " + currentScore;
+        scoreText.text = $"Items stolen: {currentScore}";
+        scoreText.font = scoreText.font; // Refresh the font to update the text
     }
 
     public void ShowInteraction(string description)
@@ -65,5 +70,24 @@ public class GameManager : MonoBehaviour
     public void HideInteraction()
     {
         interactionUI.SetActive(false);
+    }
+
+    public void ShowStealProgress(float maxValue)
+    {
+        stealProgressSlider.gameObject.SetActive(true);
+        stealProgressSlider.minValue = 0f;
+        stealProgressSlider.maxValue = maxValue;
+        stealProgressSlider.value = 0f;
+    }
+
+    public void UpdateStealProgress(float currentValue)
+    {
+        stealProgressSlider.value = currentValue;
+    }
+
+    public void HideStealProgress()
+    {
+        stealProgressSlider.value = 0f; // Reset the slider value
+        stealProgressSlider.gameObject.SetActive(false);
     }
 }

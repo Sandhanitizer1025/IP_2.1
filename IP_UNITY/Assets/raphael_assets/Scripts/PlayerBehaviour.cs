@@ -17,11 +17,6 @@ public class PlayerBehaviour : MonoBehaviour
     ItemBehaviour currentItem = null;
 
     /// <summary>
-    /// The current number of items stolen by the player.
-    /// </summary>
-    int currentItemCount = 0;
-
-    /// <summary>
     /// Stores the current door object the player has detected.
     /// </summary>
     DoorBehaviour currentDoor = null;
@@ -44,6 +39,37 @@ public class PlayerBehaviour : MonoBehaviour
 
     public GameObject interactionUI;
 
+    // <summary>
+    /// Reference to the player's camera for raycast origin and direction.
+    /// </summary>
+    [SerializeField]
+    Camera MainCamera;
+
+    /// <summary>
+    /// Indicates whether the player is currently stealing.
+    /// </summary>
+    public bool isStealing { get; private set; } = false;
+
+    void Start()
+    {
+        // Auto-find the camera if not assigned
+        if (MainCamera == null)
+        {
+            MainCamera = Camera.main;
+            if (MainCamera == null)
+            {
+                MainCamera = GetComponentInChildren<Camera>();
+            }
+
+            if (MainCamera == null)
+            {
+                Debug.LogWarning("PlayerBehaviour: No camera found! Please assign MainCamera in the inspector.");
+            }
+        }
+    }
+        
+    
+
     /// <summary>
     /// Unity Update method. Called once per frame. Handles player interaction raycasting.
     /// </summary>
@@ -51,6 +77,12 @@ public class PlayerBehaviour : MonoBehaviour
     {
         // Raycast to check if we are looking at an interactable object
         CheckForInteractable();
+        
+        //Reset stealing ONLY if not holding down 'E' or no item
+        if (!Input.GetKey(KeyCode.E) || currentItem == null)
+        {
+            isStealing = false;
+        }
 
         // Handle interaction input
         if (canInteract)
@@ -59,14 +91,33 @@ public class PlayerBehaviour : MonoBehaviour
             {
                 OnInteract(); // Door only fire once per press
             }
-            else if (currentItem != null && Input.GetKey(KeyCode.E))
+            else if (currentItem != null)
             {
-                OnInteract(); // Items still use hold 'e'
+                if (Input.GetKey(KeyCode.E))
+                {
+                    if (!isStealing) Debug.Log("Started Stealing");
+                    isStealing = true; // Set stealing state to true
+                    
+                    OnInteract(); // Items still use hold 'e'
+                }
+                else
+                {
+                    if (isStealing) Debug.Log("Stopped Stealing!");
+                    isStealing = false;
+                    holdTimer = 0f; // Reset hold timer if E is released
+                    GameManager.instance.UpdateStealProgress(0f);
+                    GameManager.instance.HideStealProgress();
+                }
             }
         }
-        else if (!Input.GetKey(KeyCode.E))
+        else
         {
-            holdTimer = 0f; // Reset hold timer if E is released
+            if (!Input.GetKey(KeyCode.E) && holdTimer > 0f)
+            {
+                holdTimer = 0f;
+                GameManager.instance.UpdateStealProgress(0f);
+                GameManager.instance.HideStealProgress();
+            }
         }
 
         interactionUI.SetActive(canInteract);
@@ -79,8 +130,12 @@ public class PlayerBehaviour : MonoBehaviour
     void CheckForInteractable()
     {
         RaycastHit hitInfo;
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * interactionDistance, Color.red);
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hitInfo, interactionDistance))
+        Vector3 rayOrigin = MainCamera.transform.position;
+        Vector3 rayDirection = MainCamera.transform.forward;
+
+        Debug.DrawRay(rayOrigin, rayDirection * interactionDistance, Color.red);
+
+        if (Physics.Raycast(rayOrigin, rayDirection, out hitInfo, interactionDistance))
         {
             GameObject hitObject = hitInfo.collider.gameObject;
             IInteractable interactable = hitObject.GetComponent<IInteractable>();
@@ -98,6 +153,7 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     currentDoor = hitObject.GetComponent<DoorBehaviour>();
                     currentItem = null;
+                    GameManager.instance.HideStealProgress();
                 }
 
                 // Show interaction UI via GameManager
@@ -142,18 +198,30 @@ public class PlayerBehaviour : MonoBehaviour
             Debug.Log("Interacting with door");
             // Call the interact method on the door object
             currentDoor.Interact();
+            return;
         }
-        else if (currentItem != null)
+
+        if (currentItem != null)
         {
+            // If starting the steal
+            if (holdTimer == 0f)
+            {
+                GameManager.instance.ShowStealProgress(holdDuration);
+            }
+
             holdTimer += Time.deltaTime;
-            Debug.Log("Holding E to collect item: " + currentItem.name);
+            isStealing = true; // Set stealing state to true
+            GameManager.instance.UpdateStealProgress(holdTimer);
+            Debug.Log("Holding E to steal: " + currentItem.name);
 
             if (holdTimer >= holdDuration)
             {
-                Debug.Log("Item collected: " + currentItem.name);
+                Debug.Log("Item stolen: " + currentItem.name);
                 currentItem.Collect();
                 currentItem = null;
                 holdTimer = 0f;
+                isStealing = false; // Reset stealing state
+                GameManager.instance.HideStealProgress();
                 GameManager.instance.HideInteraction();
             }
         }
