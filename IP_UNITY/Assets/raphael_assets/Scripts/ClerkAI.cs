@@ -164,7 +164,7 @@ public class ClerkAI : MonoBehaviour
         yield return StartCoroutine(GameManager.instance.ShowDialogue("Hey! Stop stealing! This is your last warning."));
 
         // After dialogue, load Day 2
-        yield return StartCoroutine(GameManager.instance.LoadLevel(3)); // change 2 to your Day 2 build index
+        yield return StartCoroutine(GameManager.instance.LoadLevel(2)); // change 2 to your Day 2 build index
     }
 
     bool CanSeePlayer()
