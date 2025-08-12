@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -25,6 +26,15 @@ public class GameManager : MonoBehaviour
     /// </summary>
     [SerializeField]
     TextMeshProUGUI scoreText;
+
+    public static GameManager Instance;
+
+
+    public IEnumerator LoadLevel(int levelIndex)
+    {
+        yield return null; 
+        SceneManager.LoadScene(levelIndex);
+    }
 
     /// <summary>
     /// Unity Awake method. Handles singleton pattern and ensures only one instance exists.
