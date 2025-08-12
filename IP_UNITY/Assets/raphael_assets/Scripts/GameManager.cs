@@ -31,13 +31,22 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     TextMeshProUGUI scoreText;
 
+    [SerializeField]
+    GameObject dialogueUI;
+
+    [SerializeField]
+    TextMeshProUGUI dialogueText;
+
+    [SerializeField]
+    float dialogueDuration = 3f; // Time to display dialogue
 
     public static GameManager Instance;
 
+    public bool IsDialogueActive { get; private set; }
 
     public IEnumerator LoadLevel(int levelIndex)
     {
-        yield return null; 
+        yield return null;
         SceneManager.LoadScene(levelIndex);
     }
 
@@ -104,5 +113,17 @@ public class GameManager : MonoBehaviour
     {
         stealProgressSlider.value = 0f; // Reset the slider value
         stealProgressSlider.gameObject.SetActive(false);
+    }
+
+    public IEnumerator ShowDialogue(string message)
+    {
+        IsDialogueActive = true;
+        dialogueUI.SetActive(true);
+        dialogueText.text = message;
+
+        yield return new WaitForSeconds(dialogueDuration);
+
+        dialogueUI.SetActive(false);
+        IsDialogueActive = false;
     }
 }

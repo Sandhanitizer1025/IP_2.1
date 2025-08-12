@@ -2,6 +2,10 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
+/// <summary>
+/// AI behavior for the clerk NPC.
+/// </summary>
+
 public class ClerkAI : MonoBehaviour
 {
     NavMeshAgent myAgent;
@@ -11,7 +15,9 @@ public class ClerkAI : MonoBehaviour
 
     public string currentState;
 
+    [SerializeField]
     public Transform[] patrolPoints;
+
     private int patrolIndex = 0;
 
     [SerializeField]
@@ -22,6 +28,10 @@ public class ClerkAI : MonoBehaviour
 
     [SerializeField]
     float fieldOfView = 80f; // How wide the AI's view is
+
+    [SerializeField]
+    float catchDistance = 1.5f; // How close the AI must be to catch the player
+
 
     /// <summary>
     /// Called when the script instance is being loaded. Initializes the NavMeshAgent reference.
@@ -53,66 +63,52 @@ public class ClerkAI : MonoBehaviour
         currentState = newState;
         Debug.Log("Switching to state: " + currentState);
 
-        if (newState != "Idle") StopCoroutine("Idle");
-        if (newState != "Patrol") StopCoroutine("Patrol");
-        if (newState != "Chase") StopCoroutine("Chase");
-
+        StopAllCoroutines(); // Stop any running coroutines
         StartCoroutine(newState);
+        
     }
 
-    IEnumerator Idle()
-    {
-        Debug.Log("Clerk is now idle");
-
-        float idleTime = Random.Range(2f, 5f);
-        float elapsed = 0f;
-
-        while (currentState == "Idle")
-        {
-            // Check if we can see player is stealing
-            if (CanSeePlayer())
-            {
-                StartCoroutine(SwitchState("Chase"));
-                yield break; // Exit idle immediately
-            }
-
-            elapsed += Time.deltaTime;
-            if (elapsed >= idleTime)
-            {
-                // Choose next patrol point
-                Debug.Log("Idle time over, switching to Patrol");
-                patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
-                StartCoroutine(SwitchState("Patrol"));
-                yield break; // Exit idle after switching
-            }
-            yield return null;
-        }
-
-    }
 
     IEnumerator Patrol()
     {
         Debug.Log("Entered Patrol State");
-        // Set destination to current patrol point
-        myAgent.SetDestination(patrolPoints[patrolIndex].position);
 
         while (currentState == "Patrol")
         {
-            if (CanSeePlayer())
+            // Move to current patrol point
+            myAgent.SetDestination(patrolPoints[patrolIndex].position);
+
+            while (!myAgent.pathPending && myAgent.remainingDistance > myAgent.stoppingDistance)
             {
-                StartCoroutine(SwitchState("Chase"));
-                yield break;
+                if (CanSeePlayer())
+                {
+                    Debug.Log("Player detected while patrolling");
+                    StartCoroutine(SwitchState("Chase"));
+                    yield break;
+                }
+                yield return null;
             }
 
-            // Check if agent has reached the current patrol point
-            if (!myAgent.pathPending && myAgent.remainingDistance <= myAgent.stoppingDistance)
+            Debug.Log("Reached patrol point");
+
+            // Wait at patrol point
+            float waitTime = Random.Range(2f, 5f);
+            float elapsed = 0f;
+            while (elapsed < waitTime)
             {
-                Debug.Log("Reached patrol point, switching to Idle");
-                // When reached, switch to Idle
-                StartCoroutine(SwitchState("Idle"));
-                yield break;
+                if (CanSeePlayer())
+                {
+                    //Debug.Log("Player detected while waiting at patrol point");
+                    StartCoroutine(SwitchState("Chase"));
+                    yield break;
+                }
+            
+                elapsed += Time.deltaTime;
+                yield return null;
             }
-            yield return null; // Wait for the next frame
+
+            // Move to next patrol point
+            patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
         }
     }
 
@@ -127,6 +123,13 @@ public class ClerkAI : MonoBehaviour
             if (playerTransform != null)
             {
                 myAgent.SetDestination(playerTransform.position);
+
+                if(Vector3.Distance(transform.position, playerTransform.position) <= catchDistance)
+                {
+                    Debug.Log("Caught the player!");
+                    StartCoroutine(HandleCatch());
+                    yield break; // Exit chase after catching
+                }
 
                 if (CanSeePlayer())
                 {
@@ -145,6 +148,23 @@ public class ClerkAI : MonoBehaviour
             }
             yield return null;
         }
+    }
+
+    IEnumerator HandleCatch()
+    {
+        myAgent.isStopped = true; // Stop moving
+        currentState = "Caught";
+
+        // Face the player
+        Vector3 lookDir = (playerTransform.position - transform.position).normalized;
+        lookDir.y = 0;
+        transform.rotation = Quaternion.LookRotation(lookDir);
+
+        // Show dialogue via GameManager
+        yield return StartCoroutine(GameManager.instance.ShowDialogue("Hey! Stop stealing! This is your last warning."));
+
+        // After dialogue, load Day 2
+        yield return StartCoroutine(GameManager.instance.LoadLevel(2)); // change 2 to your Day 2 build index
     }
 
     bool CanSeePlayer()
@@ -202,10 +222,10 @@ public class ClerkAI : MonoBehaviour
             Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
             if (Physics.Raycast(transform.position + Vector3.up, dirToPlayer, out RaycastHit hit, chaseRange))
             {
-                if(Application.isPlaying)
-                {
-                    Debug.Log($"[ClerkAI] Ray hit {hit.transform.name} (root: {hit.transform.root.name}), playerTransform={playerTransform.name}");
-                }
+                //if(Application.isPlaying)
+                //{
+                //Debug.Log($"[ClerkAI] Ray hit {hit.transform.name} (root: {hit.transform.root.name}), playerTransform={playerTransform.name}");
+                //}
 
                 Gizmos.color = (hit.transform.root == playerTransform || hit.transform.IsChildOf(playerTransform)) ? Color.green : Color.red;
                 Gizmos.DrawLine(transform.position + Vector3.up, hit.point);
