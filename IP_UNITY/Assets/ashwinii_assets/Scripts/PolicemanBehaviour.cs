@@ -93,7 +93,7 @@ public class PolicemanBehaviour : MonoBehaviour
             {
                 Debug.DrawRay(rayOrigin, direction * visionRange, Color.red);
 
-                if (hit.collider.CompareTag("Player") && ShouldChasePlayer())
+                if (hit.collider.CompareTag("Player") && ShouldChasePlayer() && currentState != PoliceState.Chase)
                 {
                     Debug.Log("Player spotted by policeman!");
                     currentState = PoliceState.Chase;
@@ -121,6 +121,7 @@ public class PolicemanBehaviour : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"Policeman triggered by: {other.name}");
         if (!other.CompareTag("Player") || hasInteractedWithPlayer) return;
 
         hasInteractedWithPlayer = true;
