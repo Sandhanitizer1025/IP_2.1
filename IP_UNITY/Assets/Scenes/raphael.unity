@@ -1985,8 +1985,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Press to open
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
-  m_sharedMaterial: {fileID: -1840366977063595175, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
+  m_sharedMaterial: {fileID: -2275248349443132600, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7634,8 +7634,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'Items stolen: '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
-  m_sharedMaterial: {fileID: -1840366977063595175, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
+  m_sharedMaterial: {fileID: -2275248349443132600, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7665,7 +7665,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -7899,8 +7899,13 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
+<<<<<<< Updated upstream
   m_fontAsset: {fileID: 11400000, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
   m_sharedMaterial: {fileID: -1840366977063595175, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
+=======
+  m_fontAsset: {fileID: 11400000, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
+  m_sharedMaterial: {fileID: -2275248349443132600, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
+>>>>>>> Stashed changes
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7965,7 +7970,11 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
+<<<<<<< Updated upstream
   m_hasFontAssetChanged: 0
+=======
+  m_hasFontAssetChanged: 1
+>>>>>>> Stashed changes
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1033406620
@@ -9240,8 +9249,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: E
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
-  m_sharedMaterial: {fileID: -1840366977063595175, guid: 86c809afad6c72741ba4c157a720b297, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
+  m_sharedMaterial: {fileID: -2275248349443132600, guid: 00d8ae56241a11f46a0b3361a11d8905, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
