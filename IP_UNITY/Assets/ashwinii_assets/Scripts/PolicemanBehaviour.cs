@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.AI;
 using System;
 
+/// <summary>
+/// Controls the policeman NPC using NavMesh, raycasting, FSM logic, and UI-based arrest sequence.
+/// </summary>
 public class PolicemanBehaviour : MonoBehaviour
 {
     public enum PoliceState { Patrol, Chase }
@@ -16,23 +19,27 @@ public class PolicemanBehaviour : MonoBehaviour
     [SerializeField] private float chaseSpeed = 5f;
     [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private LayerMask visionMask = ~0;
+    [SerializeField] private float rayOriginHeight = 0.5f;
+    [SerializeField] private float stoppingDistance = 0.5f;
 
     private NavMeshAgent agent;
-    private int currentPatrolIndex = 0;
+    private int currentPatrolIndex;
     private PoliceState currentState = PoliceState.Patrol;
-    private bool isPlayerStolen = false;
-    private bool hasInteractedWithPlayer = false;
+    private bool isPlayerStolen;
+    private bool hasInteractedWithPlayer;
 
-    // 🔹 Events for the game flow manager
-    public static event Action<CatchType> OnPlayerCaught; 
+    /// <summary>
+    /// Event triggered when the player is caught by the policeman.
+    /// </summary>
+    public static event Action<CatchType> OnPlayerCaught;
 
-    void Start()
+    private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         GoToNextPatrolPoint();
     }
 
-    void Update()
+    private void Update()
     {
         switch (currentState)
         {
@@ -47,29 +54,31 @@ public class PolicemanBehaviour : MonoBehaviour
         DetectPlayerWithRaycast();
     }
 
-    // Called externally when the player has stolen something
+    /// <summary>
+    /// Called externally when the player has stolen something.
+    /// </summary>
     public void OnPlayerStole()
     {
         isPlayerStolen = true;
     }
 
-    void PatrolBehaviour()
+    private void PatrolBehaviour()
     {
         agent.speed = patrolSpeed;
 
-        if (!agent.pathPending && agent.remainingDistance < 0.5f)
+        if (!agent.pathPending && agent.remainingDistance < stoppingDistance)
         {
             GoToNextPatrolPoint();
         }
     }
 
-    void ChaseBehaviour()
+    private void ChaseBehaviour()
     {
         agent.speed = chaseSpeed;
         agent.SetDestination(player.position);
     }
 
-    void GoToNextPatrolPoint()
+    private void GoToNextPatrolPoint()
     {
         if (patrolPoints.Length == 0) return;
 
@@ -77,7 +86,7 @@ public class PolicemanBehaviour : MonoBehaviour
         currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
     }
 
-    void DetectPlayerWithRaycast()
+    private void DetectPlayerWithRaycast()
     {
         // On Day 2, only chase if stolen
         if (DayManager.Instance != null && DayManager.Instance.IsDay2() && !isPlayerStolen) 
@@ -85,7 +94,7 @@ public class PolicemanBehaviour : MonoBehaviour
 
         Vector3 direction = (player.position - transform.position).normalized;
         float distance = Vector3.Distance(transform.position, player.position);
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+        Vector3 rayOrigin = transform.position + Vector3.up * rayOriginHeight;
 
         if (distance <= visionRange)
         {
@@ -108,8 +117,7 @@ public class PolicemanBehaviour : MonoBehaviour
 
         if (DayManager.Instance.IsDay1())
         {
-            // Example: Always chase for Day 1 prototype
-            return true;
+            return true; // Always chase on Day 1
         }
         else if (DayManager.Instance.IsDay2())
         {
@@ -127,20 +135,15 @@ public class PolicemanBehaviour : MonoBehaviour
         hasInteractedWithPlayer = true;
         Debug.Log("Player encountered policeman!");
 
-        // Stop policeman
         agent.isStopped = true;
-        
-        // Stop player movement
+
         PlayerBehaviourAsh playerScript = other.GetComponent<PlayerBehaviourAsh>();
         if (playerScript != null)
         {
             playerScript.enabled = false;
         }
 
-        // Decide interaction type
         CatchType catchType = DetermineCatchType();
-
-        // 🔹 Trigger event instead of scene transition
         OnPlayerCaught?.Invoke(catchType);
     }
 
@@ -159,6 +162,9 @@ public class PolicemanBehaviour : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Resets the policeman's state so they can patrol again.
+    /// </summary>
     public void ResetInteractionState()
     {
         hasInteractedWithPlayer = false;
