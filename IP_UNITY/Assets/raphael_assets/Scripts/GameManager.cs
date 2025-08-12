@@ -53,12 +53,6 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     Slider stealProgressSlider;
 
-    public int currentDay = 1;
-
-    public void SetDay(int day)
-    {
-        currentDay = day;
-    }
 
     /// <summary>
     /// Unity Awake method. Handles singleton pattern and ensures only one instance exists.
