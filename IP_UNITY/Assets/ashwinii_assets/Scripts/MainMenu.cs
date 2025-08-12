@@ -8,24 +8,24 @@ public class MainMenu : MonoBehaviour
     int targetSceneIndex;
 
     public void StartGame()
-{
-    if (targetSceneIndex >= 0)
     {
-        if (GameManager.Instance != null)
+        if (targetSceneIndex >= 0)
         {
-            StartCoroutine(GameManager.Instance.LoadLevel(targetSceneIndex));
+            if (GameManager.Instance != null)
+            {
+                StartCoroutine(GameManager.Instance.LoadLevel(targetSceneIndex));
+            }
+            else
+            {
+                Debug.LogError("GameManager instance is null! Loading scene directly.");
+                SceneManager.LoadScene(targetSceneIndex);
+            }
         }
         else
         {
-            Debug.LogError("GameManager instance is null! Loading scene directly.");
-            SceneManager.LoadScene(targetSceneIndex);
+            Debug.LogWarning("Game scene index not set in MainMenu script!");
         }
     }
-    else
-    {
-        Debug.LogWarning("Game scene index not set in MainMenu script!");
-    }
-}
 
     public void ExitGame()
     {
