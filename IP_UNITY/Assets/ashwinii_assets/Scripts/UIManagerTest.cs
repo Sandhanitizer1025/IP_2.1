@@ -17,6 +17,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private float fadeInDuration = 1.5f;
 
     private CanvasGroup gameOverCanvasGroup;
+    private bool waitingForInput = false;
+    private System.Action onInputReceived;
 
     public static UIManager Instance { get; private set; }
 
@@ -29,6 +31,22 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         SetupGameOverCanvasGroup();
+    }
+
+    void Update()
+    {
+        // Handle input when waiting
+        if (waitingForInput)
+        {
+            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || 
+                Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || 
+                Input.anyKeyDown)
+            {
+                waitingForInput = false;
+                onInputReceived?.Invoke();
+                onInputReceived = null;
+            }
+        }
     }
 
     public void RestartGame()
@@ -129,12 +147,17 @@ public class UIManager : MonoBehaviour
     // ====== Helpers ======
     private IEnumerator WaitForPlayerInput()
     {
-        while (true)
+        waitingForInput = true;
+        bool inputReceived = false;
+        
+        onInputReceived = () => inputReceived = true;
+        
+        while (!inputReceived)
         {
-            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)) break;
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.anyKeyDown) break;
             yield return null;
         }
+        
+        waitingForInput = false;
     }
 
     private void SetupGameOverCanvasGroup()
@@ -191,8 +214,60 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    public void ShowDialogue(string message)
+    {
+        StartCoroutine(ShowDialogueCoroutine(message));
+    }
+
+    private IEnumerator ShowDialogueCoroutine(string message)
+    {
+        if (dialoguePanel != null)
+        {
+            dialoguePanel.SetActive(true);
+
+            if (dialogueTypewriter != null)
+                dialogueTypewriter.TypeText(message);
+        }
+
+        yield return StartCoroutine(WaitForPlayerInput());
+
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
+        // Re-enable player after dialogue
+        ReEnablePlayer();
+    }
+
+    void OnEnable()
+    {
+        PolicemanBehaviour.OnPlayerCaught += HandlePlayerCaught;
+    }
+
+    void OnDisable()
+    {
+        PolicemanBehaviour.OnPlayerCaught -= HandlePlayerCaught;
+    }
+
+    private void HandlePlayerCaught(PolicemanBehaviour.CatchType catchType)
+    {
+        Debug.Log($"Player caught with type: {catchType}");
+        
+        string dialogueText = catchType switch
+        {
+            PolicemanBehaviour.CatchType.FirstTimeRunning => "Hey! Why are you running? Show me your bag.",
+            PolicemanBehaviour.CatchType.AccidentalBump => "Watch where you're going! Be more careful next time.",
+            PolicemanBehaviour.CatchType.SecondDayTheft => "We've received a report. Show me your bag.",
+            _ => "You are caught!"
+        };
+
+        ShowDialogue(dialogueText);
+    }
+
     public void HideAllPanels()
     {
+        waitingForInput = false;
+        onInputReceived = null;
+
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
 

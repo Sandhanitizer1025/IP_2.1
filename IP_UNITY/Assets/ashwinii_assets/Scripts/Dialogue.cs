@@ -9,27 +9,34 @@ public class Dialogue : MonoBehaviour
     public float textSpeed = 0.05f;
 
     private int index;
+    private bool isTyping = false;
 
     void Start()
     {
         textComponent.text = string.Empty;
-        gameObject.SetActive(false); // Hide dialogue panel initially
+        gameObject.SetActive(false);
     }
 
     void Update()
     {
         if (!gameObject.activeSelf) return;
 
-        if (Input.GetMouseButtonDown(0))
+        // Check for any input
+        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || 
+            Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || 
+            Input.anyKeyDown)
         {
-            if (textComponent.text == lines[index])
+            if (isTyping)
             {
-                NextLine();
+                // If still typing, complete the current line immediately
+                StopAllCoroutines();
+                textComponent.text = lines[index];
+                isTyping = false;
             }
             else
             {
-                StopAllCoroutines();
-                textComponent.text = lines[index];
+                // If done typing, go to next line
+                NextLine();
             }
         }
     }
@@ -43,8 +50,18 @@ public class Dialogue : MonoBehaviour
         StartCoroutine(TypeLine());
     }
 
+    public void StartDialogue(string singleLine)
+    {
+        lines = new string[] { singleLine };
+        index = 0;
+        textComponent.text = string.Empty;
+        gameObject.SetActive(true);
+        StartCoroutine(TypeLine());
+    }
+
     IEnumerator TypeLine()
     {
+        isTyping = true;
         textComponent.text = "";
 
         foreach (char c in lines[index])
@@ -52,6 +69,8 @@ public class Dialogue : MonoBehaviour
             textComponent.text += c;
             yield return new WaitForSeconds(textSpeed);
         }
+
+        isTyping = false;
     }
 
     void NextLine()
@@ -63,7 +82,22 @@ public class Dialogue : MonoBehaviour
         }
         else
         {
-            gameObject.SetActive(false); // Hide panel after dialogue ends
+            // Dialogue finished
+            gameObject.SetActive(false);
+            
+            // Re-enable player
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                PlayerBehaviourAsh playerScript = playerObj.GetComponent<PlayerBehaviourAsh>();
+                if (playerScript != null)
+                    playerScript.enabled = true;
+            }
+
+            // Reset policeman state
+            PolicemanBehaviour policemanScript = FindFirstObjectByType<PolicemanBehaviour>();
+            if (policemanScript != null)
+                policemanScript.ResetInteractionState();
         }
     }
 }
