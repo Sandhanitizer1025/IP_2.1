@@ -37,6 +37,6 @@ public class DoorBehaviour : MonoBehaviour, IInteractable
 
     public string GetDescription()
     {
-        return "Press E to open";
+        return "Press to open";
     }
 }
