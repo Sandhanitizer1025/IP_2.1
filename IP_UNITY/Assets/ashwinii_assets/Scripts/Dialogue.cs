@@ -2,45 +2,49 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// Handles multi-line dialogue display with typewriter effect and player re-enabling after completion.
+/// </summary>
 public class Dialogue : MonoBehaviour
 {
-    public TextMeshProUGUI textComponent;
-    public string[] lines;
-    public float textSpeed = 0.05f;
+    [Header("Dialogue Settings")]
+    [SerializeField] private TextMeshProUGUI textComponent;
+    [SerializeField] private float textSpeed = 0.05f;
 
+    private string[] lines;
     private int index;
-    private bool isTyping = false;
+    private bool isTyping;
 
-    void Start()
+    private void Start()
     {
         textComponent.text = string.Empty;
         gameObject.SetActive(false);
     }
 
-    void Update()
+    private void Update()
     {
         if (!gameObject.activeSelf) return;
 
-        // Check for any input
-        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || 
-            Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || 
-            Input.anyKeyDown)
+        if (IsAnyAdvanceInput())
         {
             if (isTyping)
             {
-                // If still typing, complete the current line immediately
+                // Complete the current line instantly
                 StopAllCoroutines();
                 textComponent.text = lines[index];
                 isTyping = false;
             }
             else
             {
-                // If done typing, go to next line
+                // Go to the next line
                 NextLine();
             }
         }
     }
 
+    /// <summary>
+    /// Starts dialogue from an array of lines.
+    /// </summary>
     public void StartDialogue(string[] newLines)
     {
         lines = newLines;
@@ -50,6 +54,9 @@ public class Dialogue : MonoBehaviour
         StartCoroutine(TypeLine());
     }
 
+    /// <summary>
+    /// Starts dialogue from a single line.
+    /// </summary>
     public void StartDialogue(string singleLine)
     {
         lines = new string[] { singleLine };
@@ -59,7 +66,7 @@ public class Dialogue : MonoBehaviour
         StartCoroutine(TypeLine());
     }
 
-    IEnumerator TypeLine()
+    private IEnumerator TypeLine()
     {
         isTyping = true;
         textComponent.text = "";
@@ -73,7 +80,7 @@ public class Dialogue : MonoBehaviour
         isTyping = false;
     }
 
-    void NextLine()
+    private void NextLine()
     {
         if (index < lines.Length - 1)
         {
@@ -84,20 +91,26 @@ public class Dialogue : MonoBehaviour
         {
             // Dialogue finished
             gameObject.SetActive(false);
-            
-            // Re-enable player
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-            {
-                PlayerBehaviourAsh playerScript = playerObj.GetComponent<PlayerBehaviourAsh>();
-                if (playerScript != null)
-                    playerScript.enabled = true;
-            }
-
-            // Reset policeman state
-            PolicemanBehaviour policemanScript = FindFirstObjectByType<PolicemanBehaviour>();
-            if (policemanScript != null)
-                policemanScript.ResetInteractionState();
+            ReEnablePlayerAndPoliceman();
         }
+    }
+
+    private void ReEnablePlayerAndPoliceman()
+    {
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            PlayerBehaviourAsh playerScript = playerObj.GetComponent<PlayerBehaviourAsh>();
+            if (playerScript != null) playerScript.enabled = true;
+        }
+
+        PolicemanBehaviour policemanScript = FindFirstObjectByType<PolicemanBehaviour>();
+        if (policemanScript != null) policemanScript.ResetInteractionState();
+    }
+
+    private bool IsAnyAdvanceInput()
+    {
+        return Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) ||
+               Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.anyKeyDown;
     }
 }
