@@ -1,33 +1,30 @@
 using UnityEngine;
 using UnityEngine.AI;
-using System.Collections;
+using System;
 
-/// <summary>
-/// Controls the policeman NPC using NavMesh, raycasting, FSM logic, and UI-based arrest sequence.
-/// </summary>
 public class PolicemanBehaviour : MonoBehaviour
 {
-    private enum PoliceState { Patrol, Chase }
+    public enum PoliceState { Patrol, Chase }
+    public enum CatchType { FirstTimeRunning, AccidentalBump, SecondDayTheft }
 
     [Header("References")]
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private Transform player;
 
-    [Header("UI Elements")]
-    [SerializeField] private GameObject dialoguePanel;    // Step 1: Confrontation UI
-    [SerializeField] private GameObject gameOverScreen;   // Step 2: Game Over UI
-
     [Header("Settings")]
     [SerializeField] private float visionRange = 10f;
     [SerializeField] private float chaseSpeed = 5f;
     [SerializeField] private float patrolSpeed = 2f;
-    [SerializeField] private LayerMask visionMask = ~0; // Raycast hits all layers
+    [SerializeField] private LayerMask visionMask = ~0;
 
     private NavMeshAgent agent;
     private int currentPatrolIndex = 0;
     private PoliceState currentState = PoliceState.Patrol;
     private bool isPlayerStolen = false;
-    private bool hasArrested = false;
+    private bool hasInteractedWithPlayer = false;
+
+    // 🔹 Events for the game flow manager
+    public static event Action<CatchType> OnPlayerCaught; 
 
     void Start()
     {
@@ -50,6 +47,7 @@ public class PolicemanBehaviour : MonoBehaviour
         DetectPlayerWithRaycast();
     }
 
+    // Called externally when the player has stolen something
     public void OnPlayerStole()
     {
         isPlayerStolen = true;
@@ -81,7 +79,9 @@ public class PolicemanBehaviour : MonoBehaviour
 
     void DetectPlayerWithRaycast()
     {
-        if (!isPlayerStolen) return;
+        // On Day 2, only chase if stolen
+        if (DayManager.Instance != null && DayManager.Instance.IsDay2() && !isPlayerStolen) 
+            return;
 
         Vector3 direction = (player.position - transform.position).normalized;
         float distance = Vector3.Distance(transform.position, player.position);
@@ -89,58 +89,80 @@ public class PolicemanBehaviour : MonoBehaviour
 
         if (distance <= visionRange)
         {
-            Ray ray = new Ray(rayOrigin, direction);
-            RaycastHit hit;
-
-            Debug.DrawRay(ray.origin, direction * visionRange, Color.red);
-
-            if (Physics.Raycast(ray, out hit, visionRange, visionMask))
+            if (Physics.Raycast(rayOrigin, direction, out RaycastHit hit, visionRange, visionMask))
             {
-                if (hit.collider.CompareTag("Player"))
+                Debug.DrawRay(rayOrigin, direction * visionRange, Color.red);
+
+                if (hit.collider.CompareTag("Player") && ShouldChasePlayer())
                 {
-                    Debug.Log("Player spotted by raycast! Switching to Chase.");
+                    Debug.Log("Player spotted by policeman!");
                     currentState = PoliceState.Chase;
                 }
             }
         }
     }
 
+    private bool ShouldChasePlayer()
+    {
+        if (DayManager.Instance == null) return true;
+
+        if (DayManager.Instance.IsDay1())
+        {
+            // Example: Always chase for Day 1 prototype
+            return true;
+        }
+        else if (DayManager.Instance.IsDay2())
+        {
+            return isPlayerStolen;
+        }
+
+        return false;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Something touched the policeman: " + other.name);
+        if (!other.CompareTag("Player") || hasInteractedWithPlayer) return;
 
-        if (other.CompareTag("Player") && !hasArrested)
+        hasInteractedWithPlayer = true;
+        Debug.Log("Player encountered policeman!");
+
+        // Stop policeman
+        agent.isStopped = true;
+        
+        // Stop player movement
+        PlayerBehaviourAsh playerScript = other.GetComponent<PlayerBehaviourAsh>();
+        if (playerScript != null)
         {
-            hasArrested = true;
-            Debug.Log("Player caught! Arresting...");
+            playerScript.enabled = false;
+        }
 
-            agent.isStopped = true;
+        // Decide interaction type
+        CatchType catchType = DetermineCatchType();
 
-            PlayerBehaviourAsh playerScript = other.GetComponent<PlayerBehaviourAsh>();
-            if (playerScript != null)
-            {
-                playerScript.enabled = false;
-            }
+        // 🔹 Trigger event instead of scene transition
+        OnPlayerCaught?.Invoke(catchType);
+    }
 
-            StartCoroutine(ShowArrestSequence());
+    private CatchType DetermineCatchType()
+    {
+        if (DayManager.Instance == null) return CatchType.SecondDayTheft;
+
+        if (DayManager.Instance.IsDay1())
+        {
+            bool wasRunning = currentState == PoliceState.Chase;
+            return wasRunning ? CatchType.FirstTimeRunning : CatchType.AccidentalBump;
+        }
+        else
+        {
+            return CatchType.SecondDayTheft;
         }
     }
 
-    private IEnumerator ShowArrestSequence()
+    public void ResetInteractionState()
     {
-        if (dialoguePanel != null)
-            dialoguePanel.SetActive(true); // Show confrontation UI
-
-        Debug.Log("Dialogue: 'We've received a report. Show me your bag.'");
-
-        yield return new WaitForSeconds(2f);
-
-        if (dialoguePanel != null)
-            dialoguePanel.SetActive(false);
-
-        if (gameOverScreen != null)
-            gameOverScreen.SetActive(true);
-
-        Time.timeScale = 0f; // Pause the game
+        hasInteractedWithPlayer = false;
+        currentState = PoliceState.Patrol;
+        agent.isStopped = false;
+        GoToNextPatrolPoint();
     }
 }

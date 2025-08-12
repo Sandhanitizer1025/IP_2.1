@@ -1,7 +1,11 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
+
+using UnityEngine.SceneManagement;
+
 using UnityEngine.UI;
+
 
 public class GameManager : MonoBehaviour
 {
@@ -27,8 +31,19 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     TextMeshProUGUI scoreText;
 
+
+    public static GameManager Instance;
+
+
+    public IEnumerator LoadLevel(int levelIndex)
+    {
+        yield return null; 
+        SceneManager.LoadScene(levelIndex);
+    }
+
     [SerializeField]
     Slider stealProgressSlider;
+
 
     /// <summary>
     /// Unity Awake method. Handles singleton pattern and ensures only one instance exists.
