@@ -9,17 +9,17 @@ EditorBuildSettings:
     path: Assets/Scenes/MainMenu.unity
     guid: 06f18c7bcbf2c304ba265867b2a498fa
   - enabled: 1
-    path: Assets/Scenes/raphael.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
     path: Assets/Scenes/Day1.unity
     guid: 03015c65092084d488375d134e2ab974
   - enabled: 1
-    path: Assets/Scenes/ashwinii.unity
-    guid: d7ce484e4a0168e459848fdc243356f6
-  - enabled: 1
     path: Assets/Scenes/Day2.unity
     guid: 60afa7be8c46d4544abf4348e50b9f99
+  - enabled: 0
+    path: Assets/Scenes/raphael.unity
+    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 0
+    path: Assets/Scenes/ashwinii.unity
+    guid: d7ce484e4a0168e459848fdc243356f6
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
