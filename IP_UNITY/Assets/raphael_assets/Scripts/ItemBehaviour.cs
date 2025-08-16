@@ -8,6 +8,8 @@ public class ItemBehaviour : MonoBehaviour, IInteractable
     [SerializeField]    
     int itemValue = 1;
 
+    [SerializeField]
+    AudioClip collectSound;
 
     public void Interact()
     {
@@ -27,6 +29,8 @@ public class ItemBehaviour : MonoBehaviour, IInteractable
     {
         // Add to the player's score
         GameManager.instance.ModifyScore(itemValue);
+
+        AudioSource.PlayClipAtPoint(collectSound, transform.position);
 
         // Destroy the item object
         Destroy(gameObject);

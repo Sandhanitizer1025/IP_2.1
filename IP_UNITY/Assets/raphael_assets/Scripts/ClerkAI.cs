@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,6 +9,7 @@ using UnityEngine.AI;
 
 public class ClerkAI : MonoBehaviour
 {
+    Animator animator;
     NavMeshAgent myAgent;
 
     [SerializeField]
@@ -39,6 +41,7 @@ public class ClerkAI : MonoBehaviour
     void Awake()
     {
         myAgent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -47,6 +50,7 @@ public class ClerkAI : MonoBehaviour
     void Start()
     {
         Debug.Log("Clerk AI started");
+        myAgent.speed = 1.5f;
         StartCoroutine(SwitchState("Patrol"));
     }
 
@@ -65,7 +69,7 @@ public class ClerkAI : MonoBehaviour
 
         StopAllCoroutines(); // Stop any running coroutines
         StartCoroutine(newState);
-        
+
     }
 
 
@@ -80,6 +84,7 @@ public class ClerkAI : MonoBehaviour
 
             while (!myAgent.pathPending && myAgent.remainingDistance > myAgent.stoppingDistance)
             {
+                UpdateMovementAnimation();
                 if (CanSeePlayer())
                 {
                     Debug.Log("Player detected while patrolling");
@@ -92,7 +97,7 @@ public class ClerkAI : MonoBehaviour
             Debug.Log("Reached patrol point");
 
             // Wait at patrol point
-            float waitTime = Random.Range(2f, 5f);
+            float waitTime = Random.Range(3f, 6f);
             float elapsed = 0f;
             while (elapsed < waitTime)
             {
@@ -102,7 +107,7 @@ public class ClerkAI : MonoBehaviour
                     StartCoroutine(SwitchState("Chase"));
                     yield break;
                 }
-            
+
                 elapsed += Time.deltaTime;
                 yield return null;
             }
@@ -115,6 +120,8 @@ public class ClerkAI : MonoBehaviour
     IEnumerator Chase()
     {
         Debug.Log("Chasing player!");
+
+        myAgent.speed = 3.5f;
         float lostSightTimer = 0f;
         float chaseMemoryTime = 2f; // seconds to keep chasing after losing sight
 
@@ -123,8 +130,9 @@ public class ClerkAI : MonoBehaviour
             if (playerTransform != null)
             {
                 myAgent.SetDestination(playerTransform.position);
+                UpdateMovementAnimation();
 
-                if(Vector3.Distance(transform.position, playerTransform.position) <= catchDistance)
+                if (Vector3.Distance(transform.position, playerTransform.position) <= catchDistance)
                 {
                     Debug.Log("Caught the player!");
                     StartCoroutine(HandleCatch());
@@ -153,6 +161,8 @@ public class ClerkAI : MonoBehaviour
     IEnumerator HandleCatch()
     {
         myAgent.isStopped = true; // Stop moving
+        animator.SetBool("isWalking", false);
+        animator.SetBool("isRunning", false);
         currentState = "Caught";
 
         // Face the player
@@ -233,5 +243,23 @@ public class ClerkAI : MonoBehaviour
         }
     }
 
+    void UpdateMovementAnimation()
+    {
+        // NavMeshAgent velocity magnitude in local space
+        float speed = myAgent.velocity.magnitude;
+
+        bool walking = speed > 0.1f && speed < 2f;
+        bool running = speed >= 2f;
+
+        animator.SetBool("isWalking", walking);
+        animator.SetBool("isRunning", running);
+
+        if (!walking && !running)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+        }
+
+    }
 
 }

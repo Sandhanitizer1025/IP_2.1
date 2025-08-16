@@ -10,10 +10,12 @@ TagManager:
   - Floor
   - Policeman
   - Stealable
+  - Friend
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
+  - Water
   - Water
   - UI
   - 

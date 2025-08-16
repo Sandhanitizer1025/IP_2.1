@@ -22,6 +22,11 @@ public class PlayerBehaviour : MonoBehaviour
     DoorBehaviour currentDoor = null;
 
     /// <summary>
+    /// /// Stores the current friend object the player has detected.
+    /// </summary>
+    FriendAI currentFriend = null;
+
+    /// <summary>
     /// The maximum distance for player interactions.
     /// </summary>
     [SerializeField]
@@ -97,7 +102,6 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     if (!isStealing) Debug.Log("Started Stealing");
                     isStealing = true; // Set stealing state to true
-                    
                     OnInteract(); // Items still use hold 'e'
                 }
                 else
@@ -108,6 +112,11 @@ public class PlayerBehaviour : MonoBehaviour
                     GameManager.instance.UpdateStealProgress(0f);
                     GameManager.instance.HideStealProgress();
                 }
+            }
+            else if (currentFriend != null && Input.GetKeyDown(KeyCode.E))
+            {
+                currentFriend.Interact(); // Trigger dialogue
+                GameManager.instance.HideInteraction();
             }
         }
         else
@@ -120,8 +129,6 @@ public class PlayerBehaviour : MonoBehaviour
             }
         }
 
-        interactionUI.SetActive(canInteract);
-
     }
 
     /// <summary>
@@ -129,6 +136,16 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void CheckForInteractable()
     {
+        if (GameManager.instance.IsDialogueActive)
+        {
+            canInteract = false;
+            currentItem = null;
+            currentDoor = null;
+            currentFriend = null;
+            GameManager.instance.HideInteraction();
+            return;
+        }
+
         RaycastHit hitInfo;
         Vector3 rayOrigin = MainCamera.transform.position;
         Vector3 rayDirection = MainCamera.transform.forward;
@@ -148,16 +165,30 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     currentItem = hitObject.GetComponent<ItemBehaviour>();
                     currentDoor = null;
+                    currentFriend = null; 
                 }
                 else if (hitObject.CompareTag("Door"))
                 {
                     currentDoor = hitObject.GetComponent<DoorBehaviour>();
                     currentItem = null;
+                    currentFriend = null;
+                    GameManager.instance.HideStealProgress();
+                }
+                else if (hitObject.CompareTag("Friend"))
+                {
+                    currentFriend = hitObject.GetComponent<FriendAI>();
+                    currentDoor = null;
+                    currentItem = null;
                     GameManager.instance.HideStealProgress();
                 }
 
-                // Show interaction UI via GameManager
-                GameManager.instance.ShowInteraction(interactable.GetDescription());
+                // Only show UI if there is a non-empty description
+                string desc = interactable.GetDescription();
+                if (!string.IsNullOrEmpty(desc))
+                    GameManager.instance.ShowInteraction(desc);
+                else
+                    GameManager.instance.HideInteraction();
+
                 return;
 
             }
@@ -182,6 +213,7 @@ public class PlayerBehaviour : MonoBehaviour
     {
         currentItem = null;
         currentDoor = null;
+        currentFriend = null;
         holdTimer = 0f;
         canInteract = false;
         GameManager.instance.HideInteraction();
@@ -225,6 +257,7 @@ public class PlayerBehaviour : MonoBehaviour
                 GameManager.instance.HideInteraction();
             }
         }
+        
         
     }
 
