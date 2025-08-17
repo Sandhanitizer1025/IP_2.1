@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,6 +9,7 @@ using UnityEngine.AI;
 
 public class ClerkAI : MonoBehaviour
 {
+    Animator animator;
     NavMeshAgent myAgent;
 
     [SerializeField]
@@ -32,6 +34,9 @@ public class ClerkAI : MonoBehaviour
     [SerializeField]
     float catchDistance = 1.5f; // How close the AI must be to catch the player
 
+    [SerializeField]
+    float greetRange = 4f; // how close player must be to trigger greeting
+    private bool hasGreetedDay2 = false;
 
     /// <summary>
     /// Called when the script instance is being loaded. Initializes the NavMeshAgent reference.
@@ -39,6 +44,7 @@ public class ClerkAI : MonoBehaviour
     void Awake()
     {
         myAgent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -47,7 +53,39 @@ public class ClerkAI : MonoBehaviour
     void Start()
     {
         Debug.Log("Clerk AI started");
-        StartCoroutine(SwitchState("Patrol"));
+
+        if (GameManager.instance.currentDay == 1)
+        {
+            myAgent.speed = 1.5f;
+            StartCoroutine(SwitchState("Patrol"));
+        }
+        else if (GameManager.instance.currentDay == 2)
+        {
+            // Idle behind counter
+            myAgent.isStopped = true;
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+            currentState = "Idle";
+
+            StartCoroutine(Day2Greeting());
+        }
+    }
+
+    IEnumerator Day2Greeting()
+    {
+        while (GameManager.instance.currentDay == 2 && !hasGreetedDay2)
+        {
+            if (playerTransform != null)
+            {
+                float dist = Vector3.Distance(transform.position, playerTransform.position);
+                if (dist <= greetRange)
+                {
+                    hasGreetedDay2 = true;
+                    yield return StartCoroutine(ShowBackAgainDialogue());
+                }
+            }
+            yield return null;
+        }
     }
 
     /// <summary>
@@ -65,7 +103,7 @@ public class ClerkAI : MonoBehaviour
 
         StopAllCoroutines(); // Stop any running coroutines
         StartCoroutine(newState);
-        
+
     }
 
 
@@ -80,6 +118,7 @@ public class ClerkAI : MonoBehaviour
 
             while (!myAgent.pathPending && myAgent.remainingDistance > myAgent.stoppingDistance)
             {
+                UpdateMovementAnimation();
                 if (CanSeePlayer())
                 {
                     Debug.Log("Player detected while patrolling");
@@ -92,7 +131,7 @@ public class ClerkAI : MonoBehaviour
             Debug.Log("Reached patrol point");
 
             // Wait at patrol point
-            float waitTime = Random.Range(2f, 5f);
+            float waitTime = Random.Range(3f, 6f);
             float elapsed = 0f;
             while (elapsed < waitTime)
             {
@@ -102,7 +141,7 @@ public class ClerkAI : MonoBehaviour
                     StartCoroutine(SwitchState("Chase"));
                     yield break;
                 }
-            
+
                 elapsed += Time.deltaTime;
                 yield return null;
             }
@@ -115,6 +154,8 @@ public class ClerkAI : MonoBehaviour
     IEnumerator Chase()
     {
         Debug.Log("Chasing player!");
+
+        myAgent.speed = 3.5f;
         float lostSightTimer = 0f;
         float chaseMemoryTime = 2f; // seconds to keep chasing after losing sight
 
@@ -123,8 +164,9 @@ public class ClerkAI : MonoBehaviour
             if (playerTransform != null)
             {
                 myAgent.SetDestination(playerTransform.position);
+                UpdateMovementAnimation();
 
-                if(Vector3.Distance(transform.position, playerTransform.position) <= catchDistance)
+                if (Vector3.Distance(transform.position, playerTransform.position) <= catchDistance)
                 {
                     Debug.Log("Caught the player!");
                     StartCoroutine(HandleCatch());
@@ -153,6 +195,8 @@ public class ClerkAI : MonoBehaviour
     IEnumerator HandleCatch()
     {
         myAgent.isStopped = true; // Stop moving
+        animator.SetBool("isWalking", false);
+        animator.SetBool("isRunning", false);
         currentState = "Caught";
 
         // Face the player
@@ -188,14 +232,33 @@ public class ClerkAI : MonoBehaviour
                         PlayerBehaviour pb = hit.transform.GetComponentInParent<PlayerBehaviour>();
                         if (pb != null)
                         {
-                            Debug.Log($"[ClerkAI] See player: {pb.isStealing}, dist={dist:F2}, hit={hit.transform.name}");
-                            return pb.isStealing; // Only return true if player is stealing
+                            if (GameManager.instance.currentDay == 1)
+                            {
+                                return pb.isStealing; // Only return true if player is stealing
+                            }
+                            else if (GameManager.instance.currentDay == 2)
+                            {
+                                StartCoroutine(ShowBackAgainDialogue());
+                                return false; // In Day 2, just show dialogue and don't chase
+                            }
                         }
                     }
                 }
             }
         }
         return false;
+    }
+
+    IEnumerator ShowBackAgainDialogue()
+    {
+        currentState = "BackAgain";
+        myAgent.isStopped = true;
+        animator.SetBool("isWalking", false);
+        animator.SetBool("isRunning", false);
+
+        yield return StartCoroutine(GameManager.instance.ShowDialogue("Back again? I'll be keeping an eye on you this time."));
+
+        currentState = "Idle";
     }
 
     void OnDrawGizmos()
@@ -233,5 +296,23 @@ public class ClerkAI : MonoBehaviour
         }
     }
 
+    void UpdateMovementAnimation()
+    {
+        // NavMeshAgent velocity magnitude in local space
+        float speed = myAgent.velocity.magnitude;
+
+        bool walking = speed > 0.1f && speed < 2f;
+        bool running = speed >= 2f;
+
+        animator.SetBool("isWalking", walking);
+        animator.SetBool("isRunning", running);
+
+        if (!walking && !running)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+        }
+
+    }
 
 }
