@@ -34,6 +34,9 @@ public class ClerkAI : MonoBehaviour
     [SerializeField]
     float catchDistance = 1.5f; // How close the AI must be to catch the player
 
+    [SerializeField]
+    float greetRange = 4f; // how close player must be to trigger greeting
+    private bool hasGreetedDay2 = false;
 
     /// <summary>
     /// Called when the script instance is being loaded. Initializes the NavMeshAgent reference.
@@ -50,8 +53,39 @@ public class ClerkAI : MonoBehaviour
     void Start()
     {
         Debug.Log("Clerk AI started");
-        myAgent.speed = 1.5f;
-        StartCoroutine(SwitchState("Patrol"));
+
+        if (GameManager.instance.currentDay == 1)
+        {
+            myAgent.speed = 1.5f;
+            StartCoroutine(SwitchState("Patrol"));
+        }
+        else if (GameManager.instance.currentDay == 2)
+        {
+            // Idle behind counter
+            myAgent.isStopped = true;
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+            currentState = "Idle";
+
+            StartCoroutine(Day2Greeting());
+        }
+    }
+
+    IEnumerator Day2Greeting()
+    {
+        while (GameManager.instance.currentDay == 2 && !hasGreetedDay2)
+        {
+            if (playerTransform != null)
+            {
+                float dist = Vector3.Distance(transform.position, playerTransform.position);
+                if (dist <= greetRange)
+                {
+                    hasGreetedDay2 = true;
+                    yield return StartCoroutine(ShowBackAgainDialogue());
+                }
+            }
+            yield return null;
+        }
     }
 
     /// <summary>
@@ -198,14 +232,33 @@ public class ClerkAI : MonoBehaviour
                         PlayerBehaviour pb = hit.transform.GetComponentInParent<PlayerBehaviour>();
                         if (pb != null)
                         {
-                            Debug.Log($"[ClerkAI] See player: {pb.isStealing}, dist={dist:F2}, hit={hit.transform.name}");
-                            return pb.isStealing; // Only return true if player is stealing
+                            if (GameManager.instance.currentDay == 1)
+                            {
+                                return pb.isStealing; // Only return true if player is stealing
+                            }
+                            else if (GameManager.instance.currentDay == 2)
+                            {
+                                StartCoroutine(ShowBackAgainDialogue());
+                                return false; // In Day 2, just show dialogue and don't chase
+                            }
                         }
                     }
                 }
             }
         }
         return false;
+    }
+
+    IEnumerator ShowBackAgainDialogue()
+    {
+        currentState = "BackAgain";
+        myAgent.isStopped = true;
+        animator.SetBool("isWalking", false);
+        animator.SetBool("isRunning", false);
+
+        yield return StartCoroutine(GameManager.instance.ShowDialogue("Back again? I'll be keeping an eye on you this time."));
+
+        currentState = "Idle";
     }
 
     void OnDrawGizmos()
