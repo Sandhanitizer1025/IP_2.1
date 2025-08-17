@@ -40,9 +40,9 @@ public class MainMenu : MonoBehaviour
         {
             if (targetSceneIndex >= 0)
             {
-                if (GameManager.instance != null)
+                if (GameManager.Instance != null)
                 {
-                    StartCoroutine(GameManager.instance.LoadLevel(targetSceneIndex));
+                    StartCoroutine(GameManager.Instance.LoadLevel(targetSceneIndex));
                 }
                 else
                 {

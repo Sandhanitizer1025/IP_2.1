@@ -1,7 +1,9 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
+
 using UnityEngine.SceneManagement;
+
 using UnityEngine.UI;
 
 
@@ -42,23 +44,15 @@ public class GameManager : MonoBehaviour
 
     public bool IsDialogueActive { get; private set; }
 
-    public int currentDay = 1;
-
-    [SerializeField]
-    Slider stealProgressSlider;
-
-
     public IEnumerator LoadLevel(int levelIndex)
     {
         yield return null;
         SceneManager.LoadScene(levelIndex);
     }
 
-    public void NextDay(int levelIndex)
-    {
-        currentDay++;
-        StartCoroutine(LoadLevel(levelIndex));
-    }
+    [SerializeField]
+    Slider stealProgressSlider;
+
 
     /// <summary>
     /// Unity Awake method. Handles singleton pattern and ensures only one instance exists.
@@ -70,10 +64,14 @@ public class GameManager : MonoBehaviour
         if (instance != null && instance != this)
         {
             // If it is not, destroy this object
-            Destroy(instance.gameObject);
+            Destroy(gameObject);
         }
-        
-        instance = this;
+        else
+        {
+            // If there is no instance, set this object as the instance
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
     }
 
     /// <summary>

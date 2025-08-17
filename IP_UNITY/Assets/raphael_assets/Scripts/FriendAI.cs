@@ -54,16 +54,11 @@ public class FriendAI : MonoBehaviour, IInteractable
 
     private IEnumerator StartQuest()
     {
-        if (GameManager.instance.currentDay == 1)
-        {
-            yield return StartCoroutine(GameManager.instance.ShowDialogue("Hey, let's steal some snacks from the store!"));
-            isFollowing = true;
-        }
-        else if (GameManager.instance.currentDay == 2)
-        {
-            yield return StartCoroutine(GameManager.instance.ShowDialogue("Don't get caught this time!"));
-            isFollowing = true;
-        }
+        // Show dialogue UI
+        yield return StartCoroutine(GameManager.instance.ShowDialogue("Hey, let's steal some snacks from the store!"));
+
+        // After dialogue, friend follows player
+        isFollowing = true;
     }
 
     private void FollowPlayer()

@@ -12,12 +12,10 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private GameObject gameOverScreen;
     [SerializeField] private GameObject warningPanel;
-    [SerializeField] private GameObject consequencesPanel;
 
     [Header("Typewriter Components")]
     [SerializeField] private TypewriterEffect dialogueTypewriter;
     [SerializeField] private TypewriterEffect warningTypewriter;
-    [SerializeField] private TypewriterEffect consequencesTypewriter;
 
     [Header("Fade Settings")]
     [SerializeField] private float fadeInDuration = 1.5f;
@@ -77,7 +75,7 @@ public class UIManager : MonoBehaviour
 
     private IEnumerator ArrestSequenceCoroutine()
     {
-        ShowPanelWithText(dialoguePanel, dialogueTypewriter, "We've received a report. You are under arrest!");
+        ShowPanelWithText(dialoguePanel, dialogueTypewriter, "We've received a report. Show me your bag.");
         yield return StartCoroutine(WaitForPlayerInput());
         dialoguePanel.SetActive(false);
 
@@ -191,9 +189,8 @@ public class UIManager : MonoBehaviour
     {
         ShowPanelWithText(dialoguePanel, dialogueTypewriter, message);
         yield return StartCoroutine(WaitForPlayerInput());
-        Debug.Log("Dialogue finished, hiding panel.");
         dialoguePanel.SetActive(false);
-        consequencesPanel.SetActive(true);
+        ReEnablePlayer();
     }
 
     private void OnEnable()
@@ -213,7 +210,7 @@ public class UIManager : MonoBehaviour
         {
             PolicemanBehaviour.CatchType.FirstTimeRunning => "Hey! Why are you running? Show me your bag.",
             PolicemanBehaviour.CatchType.AccidentalBump => "Watch where you're going! Be more careful next time.",
-            PolicemanBehaviour.CatchType.SecondDayTheft => "We've received a report. You are under arrest!",
+            PolicemanBehaviour.CatchType.SecondDayTheft => "We've received a report. Show me your bag.",
             _ => "You are caught!"
         };
 
